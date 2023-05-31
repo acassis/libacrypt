@@ -104,11 +104,19 @@
     $ ./cryp -f secret.bin -i /tmp/file.txt -o /tmp/encrypted.bin
 
     $ cat plain.txt | ./crypt -f /tmp/secret.bin -
-    
+
     $ cat plain.txt | ./crypt -f /tmp/secret.bin - > /tmp/output.bin
 
     $ cat /tmp/output.bin | ./crypt -f /tmp/secret.bin -
 ```
+
+## Limitations
+
+    This program is NOT planned to be a everyday encryption software.
+    The goal is more for research purpose. However up to 100MB files
+    were tested using it, been encrypted and decrypted correctly.
+
+    Please use it with caution and be aware of these limitations.
 
 ## Contact
 

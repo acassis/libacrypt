@@ -1,13 +1,13 @@
 /****************************************************************************
  * @file  src/crypt_main.c
- * 
+ *
  * @brief Command line crypt program.
  ****************************************************************************/
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
-  
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,6 +18,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <stdbool.h>
+#include <limits.h>
 
 #include "crypt.h"
 
@@ -58,6 +59,7 @@
  *  @var user_data_args_s::obuf
  *  Member 'obuf' pointer to output buffer
  */
+
 struct user_data_args_s
 {
   int fd_in;       /* file descriptor to the user input file  */
@@ -74,7 +76,6 @@ struct user_data_args_s
   char *obuf;      /* pointer to user output buffer           */
 };
 
-
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
@@ -88,16 +89,16 @@ static void show_help(void)
   printf("Usage:\n");
   printf("crypt [-h] -k <key> | -f <key_file>"
          " [-o <output_file>] [<input_file>]\n\n");
-  printf("Encrypt data from input file/stdin and save to output file/stdout\n\n");
+  printf("Encrypt data from input file/stdin and save to file/stdout\n\n");
   printf("Options:\n");
   printf("-h:               Show usage information on standard output\n");
-  printf("-k <key>          Used to pass the algorithm key in the command line.\n");
+  printf("-k <key>          Used to pass the algo key in the cmd line.\n");
   printf("-f <key_file>     Used to provide the algorithm key in a file.\n");
   printf("-o <output_file>  Write the results in <output_file>. Standard\n"
          "                  output shall be used if this parameter is not\n"
-         "                  provided, or if <output_file> is a dash sign (-).\n");
-  printf("-i <input_file>:  Read the input from <input_file>. Standard input\n"
-         "                  shall be used if this parameter is not given.\n");
+         "                  provided, or if it is a dash sign (-).\n");
+  printf("-i <input_file>:  Read the input from <input_file>. Stand input\n"
+         "                  shall be used if this param is not given.\n");
 }
 
 /**
@@ -118,18 +119,19 @@ static void parse_args(struct user_data_args_s *args,
   if (strcmp(argv[argc - 1], "-") == 0)
     {
       args->ispipe = true;
+      args->ifile = strdup("stdin");
     }
 
   while ((c = getopt(argc, argv, ":hk:f:i:o:")) != -1)
     {
-      switch(c)
+      switch (c)
       {
         case 'h':
             show_help();
             break;
         case 'k':
-	    strcpy(args->kbuf, optarg);
-	    args->keylen = strlen(args->kbuf);
+            strcpy(args->kbuf, optarg);
+            args->keylen = strlen(args->kbuf);
             break;
         case 'f':
             args->kfile = strdup(optarg);
@@ -149,121 +151,6 @@ static void parse_args(struct user_data_args_s *args,
                 "Unrecognized option: '-%c'\n", optopt);
       }
     }
-}
-
-/**
- * @brief Open and load the content of a file.
- *
- * @param filename name of file to open
- * @param fd pointer user to save the opened file
- * @param buffer memory buffer pointer to save read bytes
- * @param maxsize maximum size to read from a file
- * @return Success (OK = 0) or a negative error
- */
-
-static int load_file(char *filename, int *fd, char *buffer, int maxsize)
-{
-  int ret;
-
-  *fd = open(filename, O_RDONLY);
-  if (*fd < 0)
-    {
-      fprintf(stderr,
-              "Error: failed to open file %s\n", filename);
-      return -ENOENT;
-    }
-
-  /* Read the content of file to the buffer */
-
-  ret = read(*fd, buffer, maxsize);
-  if (ret < 0)
-    {
-      fprintf(stderr,
-              "Error: failed to read file %s\n", filename);
-      return -EAGAIN;
-    }
-
-  /* Save key size */
-
-  return ret;
-}
-
-/**
- * @brief Open and save a buffer content to a file.
- *
- * @param args pointer to user args struct
- * @param buf memory buffer pointer with data to be written in the file
- * @return Success (OK = 0) or a negative error
- */
-
-static int store_file(struct user_data_args_s *args, char *buf)
-{
-  int ret;
-
-  /* Open or create file, replace previous content */
-
-  args->fd_out = open(args->ofile, O_RDWR | O_TRUNC | O_CREAT);
-  if (args->fd_out < 0)
-    {
-      fprintf(stderr,
-              "Error: failed to open output file %s\n", args->ofile);
-      return -EAGAIN;
-    }
-
-  ret = write(args->fd_out, buf, args->filelen);
-  if (ret < 0)
-    {
-      fprintf(stderr,
-              "Error: failed to write file, errno = %d\n", ret);
-      return -EAGAIN;
-    }
-
-  return 0;
-}
-
-/**
- * @brief Read typed characters and store in a buffer
- *
- * @param args pointer to user args struct
- * @param buf memory buffer pointer to store read chars
- * @param maxsize maximum size to read from a file
- * @return Amount of read characters
- */
-
-static int read_input(char *buf, int maxsize, bool pipe)
-{
-  int ch;
-  int i = 0;
-
-  /* Read input until EOF, if using stdin from pipe, don't print */
-
-  if (!pipe)
-    {
-      printf("Type the text to be encrypted: ");
-    }
-
-  while ((ch = getchar()) != EOF)
-    {
-      /* If we got an Enter and it didn't come from "|" stop */
-
-      if (ch == '\n' && !pipe)
-        {
-          break;
-        }
-
-      *buf++ = ch;
-       i++;
-       if (i >= maxsize)
-         {
-           break;
-         }
-    }
-
-  /* Finish the string */
-
-  buf = '\0';
-
-  return i;
 }
 
 /**
@@ -362,6 +249,193 @@ void free_close_alloc(struct user_data_args_s *args)
     }
 }
 
+/**
+ * @brief Read typed characters and store in a buffer
+ *
+ * @param args pointer to user args struct
+ * @param buf memory buffer pointer to store read chars
+ * @param maxsize maximum size to read from a file
+ * @return Amount of read characters
+ */
+
+static int read_input(char *buf, int maxsize, bool pipe)
+{
+  int ch;
+  int i = 0;
+
+  /* Read input until EOF, if using stdin from pipe, don't print */
+
+  if (!pipe)
+    {
+      printf("Type the text to be encrypted: ");
+    }
+
+  while ((ch = getchar()) != EOF)
+    {
+      /* If we got an Enter and it didn't come from "|" stop */
+
+      if (ch == '\n' && !pipe)
+        {
+          break;
+        }
+
+      *buf++ = ch;
+      i++;
+      if (i >= maxsize)
+        {
+          break;
+        }
+    }
+
+  /* Finish the string */
+
+  buf = '\0';
+
+  return i;
+}
+
+/**
+ * @brief Open and read size of file, if stdin return MAX
+ *
+ * @param filename name of file to open
+ * @param fd pointer user to save the opened file
+ * @return Size of file or a negative error
+ */
+
+static int file_size(char *filename, int *fd)
+{
+  int ret;
+  struct stat  sb;
+
+  /* If file is "stdin" we don't open it as regular file */
+
+  if (strcmp(filename, "stdin") == 0)
+    {
+      /* stdin is fd 0 */
+
+      *fd = 0;
+
+      /* Fake it is a big file */
+
+      return INT_MAX;
+    }
+
+  *fd = open(filename, O_RDONLY);
+  if (*fd < 0)
+    {
+      fprintf(stderr,
+              "Error: failed to open file %s\n", filename);
+      return -ENOENT;
+    }
+
+  /* To obtain file size */
+
+  if (fstat(*fd, &sb) == -1)
+    {
+      fprintf(stderr,
+              "Error: failed to fstat file %s\n", filename);
+      return -ENOENT;
+    }
+
+  return sb.st_size;
+}
+
+/**
+ * @brief Open and load the content of a file.
+ *
+ * @param filename name of file to open
+ * @param fd pointer user to save the opened file
+ * @param buffer memory buffer pointer to save read bytes
+ * @param maxsize maximum size to read from a file
+ * @return Success (OK = 0) or a negative error
+ */
+
+static int load_file(struct user_data_args_s *args, int fd,
+                     char *buffer, int maxsize)
+{
+  int ret;
+
+  /* If it is stdin we need to read differently */
+
+  if (fd == 0)
+    {
+      return read_input(buffer, maxsize, args->ispipe);
+    }
+
+  /* Read the content of file to the buffer */
+
+  ret = read(fd, buffer, maxsize);
+  if (ret < 0)
+    {
+      fprintf(stderr,
+              "Error: failed to read file\n");
+      return -EAGAIN;
+    }
+
+  /* Return the amount of read bytes */
+
+  return ret;
+}
+
+/**
+ * @brief Open and save a buffer content to a file.
+ *
+ * @param args pointer to user args struct
+ * @param buf memory buffer pointer with data to be written in the file
+ * @return Success (OK = 0) or a negative error
+ */
+
+static int store_file(struct user_data_args_s *args, char *buf, int maxsize)
+{
+  int ret;
+
+  /* Should we write to stdout or to file? */
+
+  if (args->ofile == NULL)
+    {
+      /* write it to the stdout */
+
+      ret = write(1, args->obuf, maxsize);
+      if (ret < 0)
+        {
+          fprintf(stderr, "Error: failed to write to stdout = %d\n", ret);
+          free_close_alloc(args);
+          return -EAGAIN;
+        }
+    }
+  else
+    {
+      /* Open or create file, replace previous content */
+
+      if (args->fd_out == -1)
+        {
+          /* Disable file mask */
+
+          umask(0);
+
+          /* Open or Create it and remove previous content */
+
+          args->fd_out = open(args->ofile, O_RDWR | O_TRUNC | O_CREAT, 0666);
+          if (args->fd_out < 0)
+            {
+              fprintf(stderr,
+                      "Error: failed to open output file %s\n", args->ofile);
+              return -EAGAIN;
+            }
+        }
+
+      ret = write(args->fd_out, buf, maxsize);
+      if (ret < 0)
+        {
+          fprintf(stderr,
+                  "Error: failed to write file, errno = %d\n", ret);
+          return -EAGAIN;
+        }
+    }
+
+  return 0;
+}
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -373,6 +447,7 @@ void free_close_alloc(struct user_data_args_s *args)
 int main(int argc, char *argv[])
 {
   int ret;
+  int remaining;
   struct crypt_context *context;  /* struct context to save info  */
   struct user_data_args_s *args;  /* struct to store user args    */
 
@@ -410,36 +485,29 @@ int main(int argc, char *argv[])
 
   if (args->kfile != NULL)
     {
-      args->keylen = load_file(args->kfile, &args->fd_key,
-                               args->kbuf, MAX_KEY_SIZE);
+      int nread;
+
+      /* Open and get the size of key file */
+
+      args->keylen = file_size(args->kfile, &args->fd_key);
       if (args->keylen < 0)
+        {
+          fprintf(stderr,
+                  "Error: failed to open and stat key file\n");
+          free_close_alloc(args);
+          return -EAGAIN;
+        }
+
+      /* Load the entire key file (since it is only up to 256 bytes) */
+
+      nread = load_file(args, args->fd_key, args->kbuf, args->keylen);
+      if (nread < 0)
         {
           fprintf(stderr,
                   "Error: failed to load key file\n");
           free_close_alloc(args);
           return -EAGAIN;
         }
-    }
-
-  /* Should we load input from file? */
-
-  if (args->ifile != NULL)
-    {
-      args->filelen = load_file(args->ifile, &args->fd_in,
-                                args->ibuf, MAX_INPUT_SIZE);
-      if (args->filelen < 0)
-        {
-          fprintf(stderr,
-                  "Error: failed to load input file\n");
-          free_close_alloc(args);
-          return -EAGAIN;
-        }
-    }
-  else
-    {
-      /* Input file not supplied, read from stdin */
-
-      args->filelen = read_input(args->ibuf, MAX_INPUT_SIZE, args->ispipe);
     }
 
   /* Create context to save the key */
@@ -457,38 +525,70 @@ int main(int argc, char *argv[])
   context->key = args->kbuf;
   context->keylen = args->keylen;
 
-  /* Encrypt the input buffer and save it on output buffer */
+  /* If your didn't supply input file, read from stdin */
 
-  ret = crypt_buffer(context, args->obuf, args->ibuf, args->filelen);
-  if (ret < 0)
+  if (args->ifile == NULL)
+    {
+      args->ifile = strdup("stdin");
+    }
+
+  /* Open the input file and get its size */
+
+  args->filelen = file_size(args->ifile, &args->fd_in);
+  if (args->filelen < 0)
     {
       fprintf(stderr,
-              "Error: failed to encrypt file, errno = %d\n", ret);
+              "Error: failed to open and stat input file\n");
       free_close_alloc(args);
       return -EAGAIN;
     }
 
-  /* Should we store the output in a file? */
+  /* Read and process blocks of data until end of file */
 
-  if (args->ofile != NULL)
+  remaining = args->filelen;
+  while (remaining > 0)
     {
-      ret = store_file(args, args->obuf);
+      int nread;
+      int blocks_read;
+
+      blocks_read = remaining > MAX_INPUT_SIZE ? MAX_INPUT_SIZE : remaining;
+
+      nread = load_file(args, args->fd_in, args->ibuf, blocks_read);
+      if (nread < blocks_read && args->fd_in != 0) /* stdin can return less */
+        {
+          fprintf(stderr,
+                  "Error: load_file() returned less bytes than expected!\n");
+          free_close_alloc(args);
+          return -EAGAIN;
+        }
+
+      remaining -= blocks_read;
+
+      /* Encrypt the input buffer and save it on output buffer */
+
+      ret = crypt_buffer(context, args->obuf, args->ibuf, nread);
+      if (ret < 0)
+        {
+          fprintf(stderr,
+                  "Error: failed to encrypt file, errno = %d\n", ret);
+          free_close_alloc(args);
+          return -EAGAIN;
+        }
+
+      /* Should we store the output in a file? */
+
+      ret = store_file(args, args->obuf, nread);
       if (ret < 0)
         {
           free_close_alloc(args);
           return -EAGAIN;
         }
-    }
-  else
-    {
-      /* No, write it to the stdout */
 
-      ret = write(1, args->obuf, args->filelen);
-      if (ret < 0)
+      /* If stdin returned less than MAX_INPUT_SIZE, then we are done */
+
+      if (args->fd_in == 0 && nread < MAX_INPUT_SIZE)
         {
-          fprintf(stderr, "Error: failed to write to stdout = %d\n", ret);
-          free_close_alloc(args);
-          return -EAGAIN;
+          break;
         }
     }
 

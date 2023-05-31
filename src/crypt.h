@@ -1,6 +1,6 @@
 /****************************************************************************
  * @file  src/crypt.h
- * 
+ *
  * @brief Definition of libacrypt functions.
  ****************************************************************************/
 
@@ -11,16 +11,18 @@
 #include <stdint.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /** @struct crypt_context
  *  @brief This structure saves the current context
  *  @var crypt_context::key
  *  Member 'key' contains a pointer to user supplied key
- *  @var crypt_context::keylen 
+ *  @var crypt_context::keylen
  *  Member 'keylen' contains the length of user key.
  */
+
 struct crypt_context
 {
   uint8_t *key;    /* Pointer to user supplied key */
@@ -49,7 +51,7 @@ int crypt_buffer(struct crypt_context *context, uint8_t *output,
  *
  */
 
-char* crypt_version(void);
+const char *crypt_version(void);
 
 #ifdef __cplusplus
 }

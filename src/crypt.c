@@ -1,13 +1,13 @@
 /****************************************************************************
  * @file  src/crypt.c
- * 
+ *
  * @brief Implementation of libacrypt functions.
  ****************************************************************************/
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
-  
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -73,6 +73,9 @@ int crypt_buffer(struct crypt_context *context, uint8_t *output,
     {
       k[i] = (k[i] + i) % 256;
       output[cnt] = input[cnt] ^ k[i];
+#ifdef LIB_DEBUG
+      printf("input[%d] => output[%d]\n", input[cnt], output[cnt]);
+#endif
       i = ++i % ctx->keylen;
     }
 
@@ -90,7 +93,7 @@ int crypt_buffer(struct crypt_context *context, uint8_t *output,
  * @return The library version.
  */
 
-char* crypt_version(void)
+const char *crypt_version(void)
 {
   return LIBACRYPT_VERSION;
 }

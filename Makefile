@@ -25,7 +25,7 @@ $(EXEOBJS): $(EXEFILES)
 	$(CC) -o $@ $(CFLAGS) $< $(EXTRAFLAG)
 
 $(TSTCRYPT): $(TSTOBJS)
-	$(CC) -o $@ $(TSTOBJS) -L. -lacrypt -lunity
+	$(CC) -o $@ $(TSTOBJS) -L. -lacrypt -L./ci -lunity
 
 $(TSTOBJS): $(TSTFILES)
 	$(CC) -o $@ $(CFLAGS) $< $(EXTRAFLAG)

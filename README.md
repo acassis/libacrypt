@@ -112,11 +112,22 @@
 
 ## Limitations
 
-    This program is NOT planned to be a everyday encryption software.
-    The goal is more for research purpose. However up to 100MB files
-    were tested using it, been encrypted and decrypted correctly.
+    This program is NOT planned to be an everyday encryption software.
+    The goal is more for research purpose. However up to 2GB files
+    were tested using it, been encrypted and decrypted correctly:
 
-    Please use it with caution and be aware of these limitations.
+    $ cat /tmp/ubuntu-mate-18.04.5-desktop-i386.iso | crypt -f /tmp/key.bin -o /tmp/ubuntu-mate-18.04.5-desktop-i386.iso.crypt -
+
+    $ crypt -f /tmp/key.bin -i /tmp/ubuntu-mate-18.04.5-desktop-i386.iso.crypt -o /tmp/ubuntu-mate-18.04.5-desktop-i386.iso.new 
+
+    After comparing ubuntu-mate-18.04.5-desktop-i386.iso and
+    ubuntu-mate-18.04.5-desktop-i386.iso.new I have confirmed they
+    have exactly the same content.
+
+    However files bigger than 2GB will not work, because 32-bit signed
+    int used to save file size info.
+
+    Please use it with caution and don't blame if you got some issue.
 
 ## Contact
 

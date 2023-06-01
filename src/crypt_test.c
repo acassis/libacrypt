@@ -14,7 +14,7 @@
 
 #include "unity.h"
 
-#include "crypt.h"
+#include "acrypt.h"
 
 /****************************************************************************
  * Preprocessor and Macros

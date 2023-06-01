@@ -15,7 +15,7 @@
 #include <stdint.h>
 #include <errno.h>
 
-#include "crypt.h"
+#include "acrypt.h"
 
 #define X(v) #v
 #define VERSION(a,b,c) X(a) "." X(b) "." X(c)

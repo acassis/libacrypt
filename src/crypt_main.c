@@ -20,7 +20,7 @@
 #include <stdbool.h>
 #include <limits.h>
 
-#include "crypt.h"
+#include "acrypt.h"
 
 /****************************************************************************
  * Preprocessor and Macros

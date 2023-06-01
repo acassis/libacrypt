@@ -15,7 +15,7 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: configure
-      run: echo "We don't need another ./configure hero, hero"
+      run: ./configure
 
     - name: Install dependencies
       run: make && sudo make install

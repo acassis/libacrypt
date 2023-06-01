@@ -29,6 +29,7 @@
 #define MAX_KEY_SIZE     256
 #define MAX_INPUT_SIZE   1024 /* Max input size to allocate buffer */
 #define MAX_OUTPUT_SIZE  1024 /* Max output size to allocate buffer */
+#define MAX_READ_RETRY   15   /* Case read() fails, retry X times */
 
 /****************************************************************************
  * Private Types
@@ -353,7 +354,8 @@ static int file_size(char *filename, int *fd)
 static int load_file(struct user_data_args_s *args, int fd,
                      char *buffer, int maxsize)
 {
-  int ret;
+  int ret = 0;
+  int retry = MAX_READ_RETRY;
 
   /* If it is stdin we need to read differently */
 
@@ -362,14 +364,24 @@ static int load_file(struct user_data_args_s *args, int fd,
       return read_input(buffer, maxsize, args->ispipe);
     }
 
-  /* Read the content of file to the buffer */
 
-  ret = read(fd, buffer, maxsize);
-  if (ret < 0)
+  /* Read the content of file to the buffer
+   * the read() function could return less
+   * bytes than the requested, a simple workaround
+   * is just try to read again.
+   */
+
+  while (ret != maxsize && retry > 0)
     {
-      fprintf(stderr,
-              "Error: failed to read file\n");
-      return -EAGAIN;
+      retry--;
+
+      ret = read(fd, buffer, maxsize);
+      if (retry == 0 && ret < 0)
+        {
+          fprintf(stderr,
+                  "Error: failed to read file\n");
+          return -EAGAIN;
+        }
     }
 
   /* Return the amount of read bytes */

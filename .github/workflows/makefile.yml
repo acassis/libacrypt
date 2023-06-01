@@ -18,7 +18,7 @@ jobs:
       run: echo "We don't need another ./configure hero, hero"
 
     - name: Install dependencies
-      run: make
+      run: make && sudo make install
 
     - name: Run test
       run: make test
